@@ -1,0 +1,7 @@
+.highlighted_red {
+  box-shadow: inset 0 0 3px 3px red;
+}
+
+.highlighted_blue {
+  box-shadow: inset 0 0 3px 3px blue;
+}

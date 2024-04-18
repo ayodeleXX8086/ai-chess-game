@@ -1,0 +1,28 @@
+.black {
+  fill: black;
+}
+
+.white {
+  fill: white;
+}
+
+.beige {
+  background-color: rgb(110, 110, 98);
+}
+
+.brown {
+  background-color: rgb(165, 42, 42);
+}
+
+.square {
+  height: 50px;
+  width: 50px;
+}
+
+.square svg {
+  height: 30px;
+  width: 30px;
+  margin: 5px;
+  position: relative;
+  z-index: -9;
+}
