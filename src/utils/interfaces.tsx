@@ -1,24 +1,36 @@
-const BOARD_SIZE = 8;
+import { RefObject } from "react";
+import { PieceType } from "./utilites";
 
-export type Position = {
+export interface Position {
   row: number;
   col: number;
-};
-
-enum SquareID {
-  BLACK = "black",
-  WHITE = "white",
-  EMPTY = "empty",
 }
 
-const positionEquality = (position1: Position, position2: Position) => {
-  return position1.col === position2.col && position2.row === position2.row;
+export interface PieceHistory {
+  piece_id: number;
+  piece_color: SquareID;
+  piece_code: PieceType;
+  position: Position;
+  squareRef: RefObject<HTMLDivElement>;
+}
+
+enum ColorID {
+  WHITE = "white",
+  BLACK = "black",
+}
+
+enum SquareID {
+  BLACK = "BLACK",
+  WHITE = "WHITE",
+  EMPTY = "EMPTY",
+}
+type SquareIDMappingType = {
+  [key: string]: SquareID;
+};
+const SquareIDMapping: SquareIDMappingType = {
+  black: SquareID.BLACK,
+  white: SquareID.WHITE,
+  empty: SquareID.EMPTY,
 };
 
-const OnBoard = (pos: Position): boolean => {
-  return (
-    pos.row >= 0 && pos.col < BOARD_SIZE && pos.row >= 0 && pos.col < BOARD_SIZE
-  );
-};
-
-export { SquareID, positionEquality, OnBoard };
+export { SquareID, ColorID, SquareIDMapping };

@@ -1,41 +1,20 @@
-import { Position } from "@/utils/interfaces";
+import { Position, SquareID } from "@/utils/interfaces";
+import { PieceType } from "@/utils/utilites";
 import React, { useRef } from "react";
-import {
-  Queen,
-  King,
-  Bishop,
-  EmptyBoard,
-  Knight,
-  Pawn,
-  Rook,
-} from "../pieces/index";
 import styles from "./chess_piece.module.css";
-
-enum PieceType {
-  KING = "KING",
-  QUEEN = "QUEEN",
-  ROOK = "ROOK",
-  BISHOP = "BISHOP",
-  PAWN = "PAWN",
-  KNIGHT = "KNIGHT",
-  EMPTY = "EMPTY",
-}
-
-enum SquareID {
-  BLACK = "black",
-  WHITE = "white",
-  EMPTY = "empty",
-}
 
 interface SquareProps {
   type: PieceType;
   squareKey: string;
   squareRef: React.Ref<any>;
-  playerId?: SquareID;
+  playerId: SquareID;
+  component: JSX.Element;
+  position: Position;
+  pieceId: number;
   onSelectSquare?: (position: Position) => void;
   onDropSquare?: (position: Position) => void;
-  onHoverSquare?: any;
-  onUnHoverSquare?: any;
+  onHoverSquare?: (position: Position) => void;
+  onUnHoverSquare?: (position: Position) => void;
 }
 
 const SquareComponent: React.FC<SquareProps> = ({
@@ -43,6 +22,9 @@ const SquareComponent: React.FC<SquareProps> = ({
   squareKey,
   squareRef,
   playerId,
+  component,
+  position,
+  pieceId,
   onSelectSquare,
   onDropSquare,
   onHoverSquare,
@@ -50,75 +32,48 @@ const SquareComponent: React.FC<SquareProps> = ({
 }) => {
   const onDrag = (event: React.DragEvent<HTMLDivElement>) => {
     //event.preventDefault();
-    const [row, col] = squareKey.split(",").map(Number);
-    console.log("Dragging Row ", row, "Col ", col);
-    onSelectSquare?.({ row: row, col: col });
+    const { row, col } = position;
+    onSelectSquare?.({ row, col });
   };
 
   const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const [row, col] = squareKey.split(",").map(Number);
-    console.log("Dropping Row", row, "col", col);
-    onDropSquare?.({ row: row, col: col });
+    const { row, col } = position;
+    onDropSquare?.({ row, col });
   };
 
   const onHover = (event: React.DragEvent<HTMLDivElement>) => {
+    const { row, col } = position;
+    onHoverSquare?.({ row, col });
+  };
+
+  const allowDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const [row, col] = squareKey.split(",").map(Number);
-    console.log("Hover on Square", row, col);
-    onHoverSquare?.({ x: row, y: col });
   };
 
   const onUnHover = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const [row, col] = squareKey.split(",").map(Number);
-    console.log("unHover on Square", row, col);
-    onUnHoverSquare?.({ x: row, y: col });
+    const { row, col } = position;
+    onUnHoverSquare?.({ row, col });
   };
-
-  const getPieceComponent = () => {
-    switch (type) {
-      case PieceType.KING:
-        return King;
-      case PieceType.QUEEN:
-        return Queen;
-      case PieceType.ROOK:
-        return Rook;
-      case PieceType.BISHOP:
-        return Bishop;
-      case PieceType.PAWN:
-        return Pawn;
-      case PieceType.KNIGHT:
-        return Knight;
-      default:
-        return EmptyBoard;
-    }
-  };
-
-  const myElementRef = useRef(null);
-
-  const PieceComponent = getPieceComponent();
-  const id = playerId ? `${type}-${playerId}` : "empty";
-  const [row, col] = squareKey.split(",").map(Number);
-  const index = row * 8 + col;
-  const squareColor = (row % 2 === 0 ? index % 2 === 0 : index % 2 !== 0)
+  const { row } = position;
+  const squareColor = (row % 2 === 0 ? pieceId % 2 === 0 : pieceId % 2 !== 0)
     ? styles.beige
     : styles.brown;
 
   return (
     <section
       className={`${styles.square} ${squareColor}`}
-      id={id}
+      id={pieceId + ""}
       key={squareKey}
       ref={squareRef}
       onDragStart={onDrag}
-      onDrop={onDrop}
+      onDragOver={allowDrop}
       onMouseEnter={onHover}
       onMouseLeave={onUnHover}
+      draggable
+      onDrop={onDrop}
     >
-      {playerId !== SquareID.EMPTY && (
-        <PieceComponent color={playerId as string} />
-      )}
+      {component}
     </section>
   );
 };

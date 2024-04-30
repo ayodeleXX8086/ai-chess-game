@@ -1,3 +1,16 @@
+import { Position } from "./interfaces";
+enum MoveType {
+  KING = "KING",
+  QUEEN = "QUEEN",
+  ROOK = "ROOK",
+  KNIGHT = "KNIGHT",
+  PAWN = "PAWN",
+  BISHOP = "BISHOP",
+  EMPTY = "EMPTY",
+  SPECIAL = "SPECIAL",
+}
+
+const BOARD_SIZE = 8;
 const BLACK_ROOK = "ROOK,black";
 const BLACK_KNIGHT = "KNIGHT,black";
 const BLACK_BISHOP = "BISHOP,black";
@@ -49,6 +62,16 @@ const GRID: string[][] = [
   BLACK_ROW,
 ];
 
+const positionEquality = (position1: Position, position2: Position) => {
+  return position1.col === position2.col && position2.row === position2.row;
+};
+
+const OnBoard = (pos: Position): boolean => {
+  return (
+    0 <= pos.row && pos.row < BOARD_SIZE && 0 <= pos.col && pos.col < BOARD_SIZE
+  );
+};
+
 export {
   GRID,
   BLACK_ROOK,
@@ -64,4 +87,8 @@ export {
   WHITE_KING,
   WHITE_PAWN,
   EMPTY_SQUARE,
+  BOARD_SIZE,
+  positionEquality,
+  OnBoard,
+  MoveType as PieceType,
 };

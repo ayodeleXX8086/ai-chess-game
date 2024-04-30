@@ -6,7 +6,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  console.log("I'm here");
   return (
     <>
       <ImportBsJS />

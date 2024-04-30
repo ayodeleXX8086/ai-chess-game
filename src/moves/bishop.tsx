@@ -1,33 +1,29 @@
-import { Piece } from "./piece"; // Assuming you have a Piece class defined elsewhere
+import { BishopComponent } from "@/components/pieces/index";
+import { Position, SquareID } from "@/utils/interfaces";
+import { PieceType } from "@/utils/utilites";
+import { Piece, PieceProps } from "./piece"; // Assuming you have a Piece class defined elsewhere
 
-class Bishop extends Piece {
-  code: string;
-  value: number;
-  sprite: any; // You can specify a more specific type if needed
-  previousMove: any; // You can specify a more specific type if needed
-  pieceMap: any[]; // You can specify a more specific type if needed
-
-  constructor(position: any, color: number) {
-    super(position, color);
-    this.code = "b";
-    this.value = color === 0 ? 30 : -30;
-    this.previousMove = null;
-    this.pieceMap = [];
+export class Bishop extends Piece {
+  constructor(props: PieceProps) {
+    super(props);
+    this.code = PieceType.BISHOP;
+    this.component = BishopComponent;
+    this.value = this.color === SquareID.BLACK ? 30 : -30;
   }
 
-  GetMoves(board: any): [any[], any[]] {
-    const [moves, captures] = this.DiagonalMoves(board);
+  getMoves(board: any): [Position[], Position[]] {
+    const [moves, captures] = this.diagonalMoves(board);
     return [moves, captures];
   }
 
-  DiagonalMoves(board: any): [any[], any[]] {
+  diagonalMoves(board: any): [any[], any[]] {
     const patterns = [
       [-1, -1],
       [1, 1],
-      [1, -1],
       [-1, 1],
+      [1, -1],
     ];
-    const [moves, captures] = this.GetPatternMoves(board, patterns);
+    const [moves, captures] = this.getPatternMoves(board, patterns);
     return [moves, captures];
   }
 }
