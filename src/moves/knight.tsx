@@ -9,7 +9,7 @@ export class Knight extends Piece {
     super(props);
     this.code = PieceType.KNIGHT;
     this.component = KnightComponent;
-    this.value = this.color === SquareID.BLACK ? 30 : -30;
+    this.value = this.value * 30;
   }
 
   getMoves(board: Board): [Position[], Position[]] {

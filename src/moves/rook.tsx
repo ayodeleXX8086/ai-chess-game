@@ -1,5 +1,4 @@
 import { RookComponent } from "@/components/pieces/index";
-import { SquareID } from "@/utils/interfaces";
 import { PieceType } from "@/utils/utilites";
 import { Piece, PieceProps } from "./piece";
 
@@ -8,7 +7,7 @@ export class Rook extends Piece {
     super(props);
     this.code = PieceType.ROOK;
     this.component = RookComponent;
-    this.value = this.color === SquareID.BLACK ? 50 : -50;
+    this.value = this.value * 50;
   }
 
   getMoves(board: any) {

@@ -2,7 +2,10 @@ import React, { useRef } from "react";
 import styles from "./game_board.module.css";
 import { Square, PieceType, SquareID } from "../square/index";
 import SideTab from "../game_side/index";
-import { useGameBoardManagement } from "@/hooks/GameManagement";
+import {
+  useGridInitializationDomRef,
+  useGameBoardManagement,
+} from "@/hooks/GameManagement";
 import { useBoardManagement } from "@/hooks/GameMovement";
 import { Grid } from "@/moves/piece";
 import { Position } from "@/utils/interfaces";
@@ -11,6 +14,7 @@ import { useState } from "react";
 
 interface GameBoardFramProps {
   board: Board;
+  gridDomRefs: React.RefObject<HTMLDivElement>[][];
   hover: (position: Position) => void;
   unHover: (position: Position) => void;
   drop: (position: Position) => boolean;
@@ -20,6 +24,7 @@ interface GameBoardFramProps {
 
 const GameBoardFrame: React.FC<GameBoardFramProps> = ({
   board,
+  gridDomRefs,
   hover,
   unHover,
   drop,
@@ -33,7 +38,7 @@ const GameBoardFrame: React.FC<GameBoardFramProps> = ({
       setCurrPlayer(board.player);
     }
   };
-
+  let index = 0;
   return (
     <div className={styles.gameboard_container}>
       <div className={styles.gameboard}>
@@ -45,9 +50,9 @@ const GameBoardFrame: React.FC<GameBoardFramProps> = ({
               <Square
                 key={squareKey}
                 squareKey={squareKey}
-                pieceId={piece.pieceId}
+                pieceId={index++}
                 type={piece.code}
-                squareRef={piece.squareRef}
+                squareRef={gridDomRefs[rowIndex][colIndex]}
                 onHoverSquare={hover}
                 onUnHoverSquare={unHover}
                 playerId={piece.color}
@@ -71,7 +76,9 @@ const GameBoard: React.FC = () => {
   const setCurrPlayer = (currentPlayer: SquareID.BLACK | SquareID.WHITE) => {
     currPlayer.current = currentPlayer;
   };
-  const [hover, unHover, select, drop] = useBoardManagement(board);
+  const gridDomRefs: React.RefObject<HTMLDivElement>[][] =
+    useGridInitializationDomRef();
+  const [hover, unHover, select, drop] = useBoardManagement(board, gridDomRefs);
   return (
     <div className="container-fluid">
       <div className="row justify-content-center">
@@ -83,6 +90,7 @@ const GameBoard: React.FC = () => {
             drop={drop}
             board={board}
             setCurrPlayer={setCurrPlayer}
+            gridDomRefs={gridDomRefs}
           />
           <div className="text-center mt-4">
             <button className="btn btn-danger">Exit</button>

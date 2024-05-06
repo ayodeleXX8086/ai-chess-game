@@ -11,8 +11,8 @@ export type Grid = GridItem[][];
 export interface PieceProps {
   position: Position;
   color: SquareID;
-  squareRef: React.RefObject<HTMLDivElement>;
-  pieceId: number;
+  pieceId: string;
+  computerColor: SquareID;
 }
 
 export interface BoardProps {
@@ -26,36 +26,29 @@ export interface BoardProps {
   checkBlackKing: boolean;
   winner: SquareID | null;
   pieceToPromote: Piece | null;
-  setCheckWhiteKing: (isChecked: boolean) => void;
-  setCheckBlackKing: (isChecked: boolean) => void;
-  setWinner: (squareID: SquareID | null) => void;
-  setPieceToPromote: (piece: Piece | null) => void;
+  computerPlayerID: SquareID.BLACK | SquareID.WHITE;
 }
 
 export abstract class Piece {
   props: PieceProps;
   protected position: Position;
   color: SquareID;
-  squareRef: React.RefObject<HTMLDivElement>;
   code: PieceType; // You can specify a more specific type if needed
   value: number;
-  protected component: (prop?: any) => React.JSX.Element;
-  pieceId: number;
+  protected component: React.FC<any>;
+  pieceId: string;
+  computerColor: SquareID;
 
   constructor(props: PieceProps) {
     // 0 -> White, 1 -> Black, -1 -> Empty
     this.props = Object.freeze(props);
     this.position = props.position;
     this.color = props.color;
-    this.squareRef = props.squareRef;
     this.code = PieceType.EMPTY;
     this.component = EmptyPiece;
-    this.value = 0;
+    this.value = this.color !== props.computerColor ? 1 : -1;
     this.pieceId = props.pieceId;
-  }
-
-  updatePosition(newPosition: Position) {
-    this.position = newPosition;
+    this.computerColor = props.computerColor;
   }
 
   isOpponent(piece: Piece) {
@@ -69,9 +62,12 @@ export abstract class Piece {
   }
 
   getComponent() {
-    return this.component({
-      color: this.color === SquareID.BLACK ? ColorID.BLACK : ColorID.WHITE,
-    });
+    const Component = this.component; // Get the component
+    return (
+      <Component
+        color={this.color === SquareID.BLACK ? ColorID.BLACK : ColorID.WHITE}
+      />
+    );
   }
 
   abstract getMoves(board: Board): [Position[], Position[]];

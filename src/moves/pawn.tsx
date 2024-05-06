@@ -9,7 +9,7 @@ export class Pawn extends Piece {
     super(props);
     this.code = PieceType.PAWN;
     this.component = PawnComponent;
-    this.value = this.color === SquareID.BLACK ? 10 : -10;
+    this.value = this.value * 10;
   }
 
   enPassant(board: Board, change: number) {
@@ -22,14 +22,15 @@ export class Pawn extends Piece {
           pieceToCapture instanceof Pawn &&
           this.color !== pieceToCapture.color
         ) {
-          const [overrideMove, originalMove] = board.recentMove();
+          const [originalMove, overrideMove] = board.recentMove();
           if (
             overrideMove &&
             originalMove &&
-            originalMove.piece_code === this.code &&
-            overrideMove.position.col === this.position.col + i &&
-            Math.abs(overrideMove.position.row - overrideMove.position.row) ===
-              2
+            originalMove.code === this.code &&
+            overrideMove.getPosition().col === this.position.col + i &&
+            Math.abs(
+              overrideMove.getPosition().row - overrideMove.getPosition().row
+            ) === 2
           ) {
             moves.push({
               row: this.position.row + change,
@@ -55,7 +56,10 @@ export class Pawn extends Piece {
       moves.push({ row: dRow, col: this.position.col });
       if (!board.getPreviousMove(this)) {
         dRow += offset;
-        if (board.grid[dRow][this.position.col].color === SquareID.EMPTY) {
+        if (
+          OnBoard({ col: this.position.col, row: dRow }) &&
+          board.grid[dRow][this.position.col].color === SquareID.EMPTY
+        ) {
           moves.push({ row: dRow, col: this.position.col });
         }
       }

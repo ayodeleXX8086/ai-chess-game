@@ -10,7 +10,7 @@ export class King extends Piece {
     super(props);
     this.code = PieceType.KING;
     this.component = KingComponent;
-    this.value = this.color === SquareID.BLACK ? 30 : -30;
+    this.value = this.value * 30;
   }
 
   canCastle(piece: Piece | null, board: Board): boolean {

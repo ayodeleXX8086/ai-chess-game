@@ -1,21 +1,26 @@
-import { useEffect, useRef, useState } from "react";
-import { Bishop, King, Knight, Pawn, Piece, Queen, Rook } from "@/moves/index";
+import { createRef, RefObject, useEffect, useRef, useState } from "react";
+import {
+  Bishop,
+  createPiece,
+  King,
+  Knight,
+  Pawn,
+  Piece,
+  Queen,
+  Rook,
+} from "@/moves/index";
+import { v4 as uuidv4 } from "uuid";
 import { BoardProps, Grid, GridItem, PieceProps } from "@/moves/piece";
 import { GRID, PieceType } from "@/utils/utilites";
 import { Position, SquareID, SquareIDMapping } from "@/utils/interfaces";
 import { Board } from "@/board/index";
-import { EmptyPiece } from "@/components/pieces/index";
 import { Empty } from "@/moves/empty";
 
 const BOARD_SIZE = 8;
 
-const initializeBoard = (): [
-  Grid,
-  Piece[],
-  Piece[],
-  Piece | null,
-  Piece | null
-] => {
+const initializeBoard = (
+  computerPlayerID: SquareID
+): [Grid, Piece[], Piece[], Piece | null, Piece | null] => {
   const grid: Grid = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(null)
   );
@@ -29,15 +34,16 @@ const initializeBoard = (): [
       const [pieceType, playerType] = pieceInfo.split(",");
       const squareId = SquareIDMapping[playerType.toLowerCase()];
       const position: Position = { row: i, col: j } as Position;
+      const pieceId = uuidv4();
       const pieceProps: PieceProps = {
         position,
         color: squareId,
-        squareRef: useRef<HTMLDivElement>(null),
-        pieceId: index,
+        pieceId,
+        computerColor: computerPlayerID,
       };
 
-      const currPiece = createPiece(
-        pieceType,
+      const currPiece = initializeGridPiece(
+        pieceType as PieceType,
         pieceProps,
         squareId,
         blackPromotions,
@@ -57,37 +63,14 @@ const initializeBoard = (): [
   return [grid, whitePromotions, blackPromotions, whiteKing, blackKing];
 };
 
-const createPiece = (
-  pieceType: string,
+const initializeGridPiece = (
+  pieceType: PieceType,
   pieceProps: PieceProps,
   squareId: SquareID,
   blackPiecePromotions: Piece[],
   whitePiecePromotions: Piece[]
 ) => {
-  let currPiece: Piece;
-  switch (pieceType) {
-    case PieceType.KING:
-      currPiece = new King(pieceProps);
-      break;
-    case PieceType.QUEEN:
-      currPiece = new Queen(pieceProps);
-      break;
-    case PieceType.ROOK:
-      currPiece = new Rook(pieceProps);
-      break;
-    case PieceType.KNIGHT:
-      currPiece = new Knight(pieceProps);
-      break;
-    case PieceType.PAWN:
-      currPiece = new Pawn(pieceProps);
-      break;
-    case PieceType.BISHOP:
-      currPiece = new Bishop(pieceProps);
-      break;
-    default:
-      currPiece = new Empty(pieceProps);
-      break;
-  }
+  const currPiece: Piece = createPiece(pieceProps, pieceType);
 
   if (pieceType !== PieceType.EMPTY && pieceType !== PieceType.PAWN) {
     if (squareId === SquareID.BLACK) {
@@ -100,16 +83,28 @@ const createPiece = (
   return currPiece;
 };
 
+export const useGridInitializationDomRef = () => {
+  const matrix: RefObject<HTMLDivElement>[][] = [];
+
+  for (let i = 0; i < 8; i++) {
+    const row: RefObject<HTMLDivElement>[] = [];
+    for (let j = 0; j < 8; j++) {
+      const ref = createRef<HTMLDivElement>();
+      row.push(ref);
+    }
+    matrix.push(row);
+  }
+
+  return matrix;
+};
+
 export const useGameBoardManagement = (
   currPlayer: SquareID.BLACK | SquareID.WHITE
 ) => {
+  const computerPlayerID =
+    currPlayer === SquareID.BLACK ? SquareID.WHITE : SquareID.BLACK;
   const [grid, whitePromotions, blackPromotions, whiteKing, blackKing] =
-    initializeBoard();
-
-  const [winner, setWinner] = useState<SquareID | null>(null);
-  const [checkWhiteKing, setCheckWhiteKing] = useState<boolean>(false);
-  const [checkBlackKing, setCheckBlackKing] = useState<boolean>(false);
-  const [pieceToPromote, setPieceToPromote] = useState<Piece | null>(null);
+    initializeBoard(computerPlayerID);
   const props = {
     whitePromotions,
     blackPromotions,
@@ -117,14 +112,12 @@ export const useGameBoardManagement = (
     whiteKing,
     blackKing,
     currPlayer,
-    winner,
-    setWinner,
-    checkWhiteKing,
-    setCheckWhiteKing,
-    checkBlackKing,
-    setCheckBlackKing,
-    pieceToPromote,
-    setPieceToPromote,
+    computerPlayerID:
+      currPlayer === SquareID.BLACK ? SquareID.WHITE : SquareID.BLACK,
+    winner: null,
+    checkWhiteKing: false,
+    checkBlackKing: false,
+    pieceToPromote: null,
   } as BoardProps;
   const board = new Board(props);
 

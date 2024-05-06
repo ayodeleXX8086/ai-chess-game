@@ -1,26 +1,31 @@
 import { PieceHistory, Position, SquareID } from "../utils/interfaces";
-import { Queen, Bishop, Knight, Rook, Pawn, Piece, King } from "../moves/index";
+import {
+  Queen,
+  Bishop,
+  Knight,
+  Rook,
+  Pawn,
+  Piece,
+  King,
+  createPiece,
+} from "../moves/index";
 import { BoardProps, Grid, GridItem } from "@/moves/piece";
 import { Empty } from "@/moves/empty";
 import { PieceType } from "@/utils/utilites";
 
 export class Board {
   player: SquareID.BLACK | SquareID.WHITE;
-  historic: PieceHistory[];
+  computerPlayerID: SquareID.BLACK | SquareID.WHITE;
+  historic: Piece[];
   grid: Grid;
   checkWhiteKing: boolean;
   checkBlackKing: boolean;
   whiteKing: Piece | null = null;
   blackKing: Piece | null = null;
-  winner: SquareID | null;
+  winner: SquareID;
   pieceToPromote: Piece | null;
   whitePromotions: (Queen | Bishop | Knight | Rook)[];
   blackPromotions: (Rook | Knight | Bishop | Queen)[];
-
-  setCheckWhiteKing: (isChecked: boolean) => void;
-  setCheckBlackKing: (isChecked: boolean) => void;
-  setWinner: (squareID: SquareID | null) => void;
-  setPieceToPromote: (piece: Piece | null) => void;
 
   constructor(props: BoardProps) {
     this.player = props.currPlayer;
@@ -28,28 +33,25 @@ export class Board {
     this.grid = props.grid;
     this.checkWhiteKing = props.checkWhiteKing;
     this.checkBlackKing = props.checkBlackKing;
-    this.winner = props.winner;
+    this.winner = props.winner || SquareID.EMPTY;
     this.pieceToPromote = props.pieceToPromote;
     this.whitePromotions = props.whitePromotions;
     this.blackPromotions = props.blackPromotions;
     this.whiteKing = props.whiteKing;
     this.blackKing = props.blackKing;
-    this.setCheckBlackKing = props.setCheckBlackKing;
-    this.setCheckWhiteKing = props.setCheckWhiteKing;
-    this.setWinner = props.setWinner;
-    this.setPieceToPromote = props.setPieceToPromote;
+    this.computerPlayerID = props.computerPlayerID;
   }
 
   forfeit() {
     // resign
   }
 
-  getPreviousMove(piece: Piece): PieceHistory | null {
+  getPreviousMove(piece: Piece): Piece | null {
     return (
       this.historic
         .slice()
         .reverse()
-        .find((value) => value.piece_id === piece.pieceId) || null
+        .find((value) => value.pieceId === piece.pieceId) || null
     );
   }
 
@@ -67,7 +69,7 @@ export class Board {
     this.isCheckmate();
   }
 
-  recentMove(): PieceHistory[] {
+  recentMove(): Piece[] {
     return this.historic.length > 0
       ? [
           this.historic[this.historic.length - 1],
@@ -93,29 +95,31 @@ export class Board {
     return [allowedMoves, allowedCaptures];
   }
 
-  move(piece: Piece, position: Position, isSimulation: boolean) {
+  move(previousPosition: Position, position: Position): [Position, Position] {
     position = { ...position };
+    const piece = this.grid[previousPosition.row][previousPosition.col];
+
     if (
       piece.code === PieceType.KING &&
       this.isCastling(piece, { ...position })
     ) {
-      this.castleKing(piece as King, { ...position }, isSimulation);
+      this.castleKing(piece as King, { ...position });
     } else if (this.isEnPassant(piece, { ...position })) {
       this.grid[position.row][piece.getPosition().col] = new Empty({
         position:
           this.grid[position.row][piece.getPosition().col].getPosition(),
         color: SquareID.EMPTY,
-        squareRef: this.grid[position.row][piece.getPosition().col].squareRef,
         pieceId: this.grid[position.row][piece.getPosition().col].pieceId,
+        computerColor: this.computerPlayerID,
       });
-      this.movePiece(piece, position, isSimulation);
-      this.historic[this.historic.length - 1].piece_code = PieceType.SPECIAL;
+      this.movePiece(piece, position);
+      this.historic[this.historic.length - 1].code = PieceType.SPECIAL;
     } else {
-      this.movePiece(piece, position, isSimulation);
+      this.movePiece(piece, position);
     }
 
     if (
-      piece instanceof Pawn &&
+      piece.code === PieceType.PAWN &&
       (piece.getPosition().row === 0 || piece.getPosition().row === 7)
     ) {
       this.pieceToPromote = piece;
@@ -124,39 +128,26 @@ export class Board {
     }
 
     this.check();
+    return [previousPosition, position];
   }
 
-  movePiece(piece: Piece, position: Position, isSimulation: boolean) {
-    const newPosition = { ...position };
-    const [prevSquareRef, currSquareRef] = [
-      piece.squareRef,
-      this.grid[position.row][position.col].squareRef,
-    ];
+  private movePiece(piece: Piece, position: Position) {
     const prevPiece = this.grid[position.row][position.col];
     this.grid[piece.getPosition().row][piece.getPosition().col] = new Empty({
       position: piece.getPosition(),
       color: SquareID.EMPTY,
-      squareRef: prevSquareRef,
       pieceId: piece.pieceId,
+      computerColor: this.computerPlayerID,
     });
-    const oldPosition = { ...piece.getPosition() };
-    piece.updatePosition(position);
-    piece.squareRef = currSquareRef;
-    this.grid[position.row][position.col] = piece;
-    this.historic.push({
-      position: oldPosition,
-      piece_code: piece.code,
-      piece_color: piece.color,
-      piece_id: piece.pieceId,
-      squareRef: currSquareRef,
-    });
-    this.historic.push({
-      position: newPosition,
-      piece_code: prevPiece.code,
-      piece_color: prevPiece.color,
-      piece_id: prevPiece.pieceId,
-      squareRef: prevSquareRef,
-    });
+    this.grid[position.row][position.col] = createPiece(
+      {
+        ...piece.props,
+        position,
+      },
+      piece.code
+    );
+    this.historic.push(prevPiece);
+    this.historic.push(piece);
     this.checkBlackKing = false;
     this.checkWhiteKing = false;
   }
@@ -167,12 +158,12 @@ export class Board {
     const oldPosition = { ...piece.getPosition() };
     let captureEnPassant = null;
     const capturedPiece = this.grid[position.row][position.col];
-    const _piece = this.grid[position.row][oldPosition.col];
+    const empty_piece = this.grid[position.row][oldPosition.col];
     const emptyPiece = new Empty({
-      position: _piece.getPosition(),
+      position: empty_piece.getPosition(),
       color: SquareID.EMPTY,
-      squareRef: _piece.squareRef,
-      pieceId: _piece.pieceId,
+      pieceId: empty_piece.pieceId,
+      computerColor: this.computerPlayerID,
     });
     if (this.isEnPassant(piece, position)) {
       captureEnPassant = this.grid[position.row][oldPosition.col];
@@ -180,8 +171,10 @@ export class Board {
     }
 
     this.grid[oldPosition.row][oldPosition.col] = emptyPiece;
-    this.grid[position.row][position.col] = piece;
-    piece.updatePosition(move);
+    this.grid[position.row][position.col] = createPiece(
+      { ...piece.props, position: position },
+      piece.code
+    );
 
     const enemyCaptures = this.getEnemyCaptures(this.player);
     if (
@@ -223,7 +216,6 @@ export class Board {
   undoMove(piece: any, captured: any, oldPos: any, pos: any) {
     this.grid[oldPos.row][oldPos.col] = piece;
     this.grid[pos.row][pos.col] = captured;
-    piece.updatePosition(oldPos);
   }
 
   getEnemyCaptures(player: SquareID) {
@@ -245,8 +237,6 @@ export class Board {
       Math.abs(king.getPosition().col - position.col) > 1
     );
   }
-
-  getRecentMove(piece: Piece) {}
 
   isEnPassant(piece: any, newPos: any) {
     if (!(piece instanceof Pawn)) {
@@ -270,7 +260,7 @@ export class Board {
     );
   }
 
-  castleKing(king: King, position: Position, isSimulation: boolean) {
+  castleKing(king: King, position: Position) {
     position = { ...position };
     if (position.col !== 2 && position.col !== 6) return;
 
@@ -278,29 +268,60 @@ export class Board {
       position.col === 2
         ? this.grid[king.getPosition().row][0]
         : this.grid[king.getPosition().row][7];
+    let positionRook: Position;
     if (position.col === 2) {
-      this.movePiece(king, position, isSimulation);
+      this.movePiece(king, position);
       let newPiece = new Empty({
         position: { row: rook.getPosition().row, col: 0 },
         color: SquareID.EMPTY,
-        squareRef: this.grid[rook.getPosition().row][0].squareRef,
         pieceId: this.grid[rook.getPosition().row][0].pieceId,
+        computerColor: this.computerPlayerID,
       });
       this.grid[rook.getPosition().row][0] = newPiece;
-      rook.updatePosition({ col: rook.getPosition().col, row: 3 });
+      positionRook = { col: rook.getPosition().col, row: 3 };
     } else {
-      this.movePiece(king, position, isSimulation);
+      this.movePiece(king, position);
       let newPiece = new Empty({
         position: { row: 0, col: rook.getPosition().col },
         color: SquareID.EMPTY,
-        squareRef: this.grid[0][rook.getPosition().col].squareRef,
         pieceId: this.grid[0][rook.getPosition().col].pieceId,
+        computerColor: this.computerPlayerID,
       });
       this.grid[rook.getPosition().row][7] = newPiece;
-      rook.updatePosition({ col: rook.getPosition().col, row: 5 });
+      positionRook = { col: rook.getPosition().col, row: 5 };
     }
-    this.grid[rook.getPosition().row][rook.getPosition().col] = rook;
-    this.historic[this.historic.length - 1].piece_code = PieceType.SPECIAL;
+    this.grid[positionRook.row][positionRook.col] = createPiece(
+      {
+        ...rook.props,
+        position: positionRook,
+      },
+      rook.code
+    );
+    this.historic[this.historic.length - 1].code = PieceType.SPECIAL;
+  }
+
+  undoLastMove() {
+    if (this.historic.length < 2) {
+      return; // No previous move to undo
+    }
+
+    const lastMove = this.historic.pop(); // Remove the last move from the history
+    const prevMove = this.historic.pop(); // Get the previous move
+
+    if (!prevMove || !lastMove) {
+      return; // Invalid state, cannot undo
+    }
+
+    this.grid[lastMove.getPosition().row][lastMove.getPosition().col] =
+      lastMove;
+    this.grid[prevMove.getPosition().row][prevMove.getPosition().col] =
+      prevMove;
+
+    // Switch turn back to the previous player
+    this.switchTurn();
+
+    // Check the game state again
+    this.check();
   }
 
   promotePawn(pawn: Pawn, choice: number) {
@@ -308,8 +329,8 @@ export class Board {
     let newPiece = new Empty({
       position: position,
       color: SquareID.EMPTY,
-      squareRef: pawn.squareRef,
       pieceId: pawn.pieceId,
+      computerColor: this.computerPlayerID,
     });
     if (choice === 0) {
       newPiece = new Queen(pawn.props);
@@ -324,28 +345,7 @@ export class Board {
     this.grid[position.row][position.col] = newPiece;
     this.switchTurn();
     this.check();
-    this.setPieceToPromote(null);
-  }
-
-  moveSimulation(piece: Piece, nextPos: Position) {
-    const empty = new Empty({
-      position: piece.getPosition(),
-      color: SquareID.EMPTY,
-      squareRef: piece.squareRef,
-      pieceId: piece.pieceId,
-    });
-    if (this.grid[nextPos.row][nextPos.col].code === PieceType.EMPTY) {
-      this.grid[piece.getPosition().row][piece.getPosition().col] = empty;
-      piece.updatePosition({ ...nextPos });
-      this.grid[nextPos.row][nextPos.col] = piece;
-      return null;
-    } else {
-      const prevPiece = this.grid[nextPos.row][nextPos.col];
-      this.grid[piece.getPosition().row][piece.getPosition().col] = empty;
-      piece.updatePosition({ ...nextPos });
-      this.grid[nextPos.row][nextPos.col] = piece;
-      return prevPiece;
-    }
+    this.pieceToPromote = null;
   }
 
   check() {
@@ -357,10 +357,10 @@ export class Board {
           const [moves, captures] = this.getAllowedMoves(piece);
           if (captures.includes(king?.getPosition())) {
             if (this.player === SquareID.WHITE) {
-              this.setCheckBlackKing(true);
+              this.checkBlackKing = true;
               return;
             } else {
-              this.setCheckWhiteKing(true);
+              this.checkWhiteKing = true;
               return;
             }
           }
@@ -373,8 +373,8 @@ export class Board {
     return new Empty({
       position: piece.getPosition(),
       color: SquareID.EMPTY,
-      squareRef: piece.squareRef,
       pieceId: piece.pieceId,
+      computerColor: this.computerPlayerID,
     });
   }
 
@@ -392,11 +392,11 @@ export class Board {
 
     this.check();
     if (this.checkWhiteKing) {
-      this.setWinner(SquareID.BLACK);
+      this.winner = SquareID.BLACK;
     } else if (this.checkBlackKing) {
-      this.setWinner(SquareID.WHITE);
+      this.winner = SquareID.WHITE;
     } else {
-      this.setWinner(null);
+      this.winner = SquareID.EMPTY;
     }
 
     return true;

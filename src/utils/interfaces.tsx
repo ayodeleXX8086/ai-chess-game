@@ -11,7 +11,6 @@ export interface PieceHistory {
   piece_color: SquareID;
   piece_code: PieceType;
   position: Position;
-  squareRef: RefObject<HTMLDivElement>;
 }
 
 enum ColorID {

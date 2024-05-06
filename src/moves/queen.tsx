@@ -14,7 +14,7 @@ export class Queen extends Piece {
     super(props);
     this.code = PieceType.QUEEN;
     this.component = QueenComponent;
-    this.value = this.color === SquareID.BLACK ? 90 : -90;
+    this.value = this.value * 90;
     this.rook = new Rook(props);
     this.bishop = new Bishop(props);
   }

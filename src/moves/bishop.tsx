@@ -8,7 +8,7 @@ export class Bishop extends Piece {
     super(props);
     this.code = PieceType.BISHOP;
     this.component = BishopComponent;
-    this.value = this.color === SquareID.BLACK ? 30 : -30;
+    this.value = this.value * 30;
   }
 
   getMoves(board: any): [Position[], Position[]] {

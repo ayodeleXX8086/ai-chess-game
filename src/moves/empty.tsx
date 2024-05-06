@@ -14,7 +14,8 @@ export class Empty extends Piece {
   }
 
   getComponent() {
-    return this.component();
+    const Component = this.component; // Get the component
+    return <Component />;
   }
 
   getMoves(board: Board): [Position[], Position[]] {
