@@ -1,0 +1,30 @@
+.customModal {
+  max-width: 200px;
+  width: 200px;
+  height: 200px;
+}
+
+.modal-content {
+  height: 100%;
+}
+
+.modal-dialog {
+  max-width: 90%;
+  margin: 1rem auto;
+}
+
+.modal-body {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.square {
+  width: 100px;
+  height: 100px;
+  margin: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #ccc;
+}

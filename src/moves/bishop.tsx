@@ -1,4 +1,3 @@
-import { BishopComponent } from "@/components/pieces/index";
 import { Position, SquareID } from "@/utils/interfaces";
 import { PieceType } from "@/utils/utilites";
 import { Piece, PieceProps } from "./piece"; // Assuming you have a Piece class defined elsewhere
@@ -6,8 +5,7 @@ import { Piece, PieceProps } from "./piece"; // Assuming you have a Piece class 
 export class Bishop extends Piece {
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.BISHOP;
-    this.component = BishopComponent;
+    this.move = this.code = PieceType.BISHOP;
     this.value = this.value * 30;
   }
 

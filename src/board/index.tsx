@@ -1,4 +1,4 @@
-import { PieceHistory, Position, SquareID } from "../utils/interfaces";
+import { Position, SquareID } from "../utils/interfaces";
 import {
   Queen,
   Bishop,
@@ -14,36 +14,34 @@ import { Empty } from "@/moves/empty";
 import { PieceType } from "@/utils/utilites";
 
 export class Board {
+  private props: BoardProps;
   player: SquareID.BLACK | SquareID.WHITE;
   computerPlayerID: SquareID.BLACK | SquareID.WHITE;
   historic: Piece[];
   grid: Grid;
   checkWhiteKing: boolean;
   checkBlackKing: boolean;
-  whiteKing: Piece | null = null;
-  blackKing: Piece | null = null;
+  whiteKingPosition: Position | null = null;
+  blackKingPosition: Position | null = null;
   winner: SquareID;
   pieceToPromote: Piece | null;
-  whitePromotions: (Queen | Bishop | Knight | Rook)[];
-  blackPromotions: (Rook | Knight | Bishop | Queen)[];
 
   constructor(props: BoardProps) {
+    this.props = props;
     this.player = props.currPlayer;
-    this.historic = [];
+    this.historic = props.history;
     this.grid = props.grid;
     this.checkWhiteKing = props.checkWhiteKing;
     this.checkBlackKing = props.checkBlackKing;
     this.winner = props.winner || SquareID.EMPTY;
     this.pieceToPromote = props.pieceToPromote;
-    this.whitePromotions = props.whitePromotions;
-    this.blackPromotions = props.blackPromotions;
-    this.whiteKing = props.whiteKing;
-    this.blackKing = props.blackKing;
+    this.whiteKingPosition = props.whiteKing.getPosition();
+    this.blackKingPosition = props.blackKing.getPosition();
     this.computerPlayerID = props.computerPlayerID;
   }
 
-  forfeit() {
-    // resign
+  getBoardProps() {
+    return this.props;
   }
 
   getPreviousMove(piece: Piece): Piece | null {
@@ -57,10 +55,6 @@ export class Board {
 
   getPiece(coord: Position) {
     return this.grid[coord.row][coord.col];
-  }
-
-  setPiece(position: Position, piece: any) {
-    this.grid[position.row][position.col] = piece;
   }
 
   switchTurn(isAI = false) {
@@ -78,20 +72,20 @@ export class Board {
       : [];
   }
 
-  allowedMoveList(piece: Piece, moves: Position[], isAI: boolean): Position[] {
+  allowedMoveList(piece: Piece, moves: Position[]): Position[] {
     const allowedMoves: Position[] = [];
     for (const move of moves) {
-      if (this.verifyMove(piece, { ...move }, isAI)) {
+      if (this.validateMove(piece, { ...move })) {
         allowedMoves.push({ ...move });
       }
     }
     return allowedMoves;
   }
 
-  getAllowedMoves(piece: any, isAI = false) {
+  getAllowedMoves(piece: any) {
     const [moves, captures] = piece.getMoves(this);
-    const allowedMoves = this.allowedMoveList(piece, moves.slice(), isAI);
-    const allowedCaptures = this.allowedMoveList(piece, captures.slice(), isAI);
+    const allowedMoves = this.allowedMoveList(piece, moves.slice());
+    const allowedCaptures = this.allowedMoveList(piece, captures.slice());
     return [allowedMoves, allowedCaptures];
   }
 
@@ -113,7 +107,7 @@ export class Board {
         computerColor: this.computerPlayerID,
       });
       this.movePiece(piece, position);
-      this.historic[this.historic.length - 1].code = PieceType.SPECIAL;
+      this.historic[this.historic.length - 1].move = PieceType.SPECIAL;
     } else {
       this.movePiece(piece, position);
     }
@@ -128,7 +122,44 @@ export class Board {
     }
 
     this.check();
+    if (
+      piece.code === PieceType.KING &&
+      this.grid[previousPosition.row][previousPosition.col].code !== piece.code
+    ) {
+      if (this.grid[position.row][position.col].code === PieceType.KING) {
+        if (this.grid[position.row][position.col].color === SquareID.BLACK) {
+          this.blackKingPosition = position;
+        } else {
+          this.whiteKingPosition = position;
+        }
+      }
+    }
     return [previousPosition, position];
+  }
+
+  clone(): Board {
+    const propsClone = { ...this.props };
+    const gridClone: Grid = [];
+    for (let row = 0; row < this.grid.length; row++) {
+      gridClone[row] = [...this.grid[row]];
+    }
+    const historicClone: Piece[] = this.historic;
+
+    const boardClone = new Board({
+      ...propsClone,
+      grid: gridClone,
+      history: this.historic,
+    });
+
+    boardClone.player = this.player;
+    boardClone.computerPlayerID = this.computerPlayerID;
+    boardClone.checkWhiteKing = this.checkWhiteKing;
+    boardClone.checkBlackKing = this.checkBlackKing;
+    boardClone.whiteKingPosition = this.whiteKingPosition;
+    boardClone.blackKingPosition = this.blackKingPosition;
+    boardClone.winner = this.winner;
+    boardClone.pieceToPromote = this.pieceToPromote;
+    return boardClone;
   }
 
   private movePiece(piece: Piece, position: Position) {
@@ -152,13 +183,12 @@ export class Board {
     this.checkWhiteKing = false;
   }
 
-  verifyMove(piece: Piece, move: Position, isAI: boolean) {
-    if (this.player !== piece.color) return false;
+  private validateMove(piece: Piece, move: Position) {
     const position = { ...move };
     const oldPosition = { ...piece.getPosition() };
-    let captureEnPassant = null;
+    let captureEnPassant: Piece | null = null;
     const capturedPiece = this.grid[position.row][position.col];
-    const empty_piece = this.grid[position.row][oldPosition.col];
+    const empty_piece = this.grid[oldPosition.row][position.col];
     const emptyPiece = new Empty({
       position: empty_piece.getPosition(),
       color: SquareID.EMPTY,
@@ -166,8 +196,8 @@ export class Board {
       computerColor: this.computerPlayerID,
     });
     if (this.isEnPassant(piece, position)) {
-      captureEnPassant = this.grid[position.row][oldPosition.col];
-      this.grid[position.row][oldPosition.col] = emptyPiece;
+      captureEnPassant = this.grid[oldPosition.row][position.col];
+      this.grid[oldPosition.row][position.col] = emptyPiece;
     }
 
     this.grid[oldPosition.row][oldPosition.col] = emptyPiece;
@@ -179,10 +209,10 @@ export class Board {
     const enemyCaptures = this.getEnemyCaptures(this.player);
     if (
       this.isCastling(piece, oldPosition) &&
-      ((!this.verifyMove(piece, { row: 5, col: position.col }, isAI) &&
-        Math.abs(position.row - oldPosition.row) === 2) ||
-        (!this.verifyMove(piece, { row: 3, col: position.col }, isAI) &&
-          Math.abs(position.row - oldPosition.row) === 3) ||
+      ((!this.validateMove(piece, { row: position.row, col: 5 }) &&
+        Math.abs(position.col - oldPosition.col) === 2) ||
+        (!this.validateMove(piece, { row: position.row, col: 3 }) &&
+          Math.abs(position.col - oldPosition.col) === 3) ||
         this.isInCheck(piece))
     ) {
       this.undoMove(piece, capturedPiece, oldPosition, position);
@@ -191,16 +221,19 @@ export class Board {
 
     for (const pos of enemyCaptures) {
       if (
-        (this.whiteKing &&
-          this.whiteKing?.getPosition() === pos &&
-          piece.color === SquareID.BLACK) ||
-        (this.blackKing &&
-          this.blackKing?.getPosition() === pos &&
-          piece.color === SquareID.WHITE)
+        (this.whiteKingPosition?.col === pos.col &&
+          this.whiteKingPosition?.row === pos.row &&
+          piece.color === SquareID.WHITE) ||
+        (this.blackKingPosition?.col === pos.col &&
+          this.blackKingPosition?.row === pos.row &&
+          piece.color === SquareID.BLACK)
       ) {
         this.undoMove(piece, capturedPiece, oldPosition, position);
-        if (captureEnPassant !== null) {
-          this.grid[position.row][oldPosition.col] = captureEnPassant;
+        if (
+          captureEnPassant !== null &&
+          captureEnPassant.color !== SquareID.EMPTY
+        ) {
+          this.grid[oldPosition.row][position.col] = captureEnPassant;
         }
         return false;
       }
@@ -208,9 +241,14 @@ export class Board {
 
     this.undoMove(piece, capturedPiece, oldPosition, position);
     if (captureEnPassant !== null) {
-      this.grid[position.row][oldPosition.col] = captureEnPassant;
+      this.grid[oldPosition.row][position.col] = captureEnPassant;
     }
     return true;
+  }
+
+  verifyMove(piece: Piece, move: Position) {
+    if (this.player !== piece.color) return false;
+    return this.validateMove(piece, move);
   }
 
   undoMove(piece: any, captured: any, oldPos: any, pos: any) {
@@ -218,8 +256,8 @@ export class Board {
     this.grid[pos.row][pos.col] = captured;
   }
 
-  getEnemyCaptures(player: SquareID) {
-    const captures = [];
+  getEnemyCaptures(player: SquareID): Position[] {
+    const captures: Position[] = [];
     for (const pieces of this.grid) {
       for (const piece of pieces) {
         if (piece !== null && piece.color !== player) {
@@ -297,7 +335,7 @@ export class Board {
       },
       rook.code
     );
-    this.historic[this.historic.length - 1].code = PieceType.SPECIAL;
+    this.historic[this.historic.length - 1].move = PieceType.SPECIAL;
   }
 
   undoLastMove() {
@@ -349,18 +387,30 @@ export class Board {
   }
 
   check() {
-    let king = this.player === SquareID.BLACK ? this.whiteKing : this.blackKing;
-    if (!king) return;
+    let kingPosition =
+      this.player === SquareID.BLACK
+        ? this.blackKingPosition
+        : this.whiteKingPosition;
+    if (!kingPosition) return;
     for (const pieces of this.grid) {
       for (const piece of pieces) {
-        if (piece !== null && piece.color !== this.player) {
+        if (piece.color !== SquareID.EMPTY && piece.color !== this.player) {
+          if (piece.code === PieceType.ROOK) {
+            console.log("Rook");
+          }
           const [moves, captures] = this.getAllowedMoves(piece);
-          if (captures.includes(king?.getPosition())) {
+          if (
+            captures.find(
+              (capture) =>
+                capture.row === kingPosition.row &&
+                capture.col === kingPosition.col
+            )
+          ) {
             if (this.player === SquareID.WHITE) {
-              this.checkBlackKing = true;
+              this.checkWhiteKing = true;
               return;
             } else {
-              this.checkWhiteKing = true;
+              this.checkBlackKing = true;
               return;
             }
           }
@@ -381,7 +431,7 @@ export class Board {
   isCheckmate() {
     for (const pieces of this.grid) {
       for (const piece of pieces) {
-        if (piece !== null && piece.color === this.player) {
+        if (piece.color !== SquareID.EMPTY && piece.color === this.player) {
           const [moves, captures] = this.getAllowedMoves(piece);
           if (moves.length > 0 || captures.length > 0) {
             return false;

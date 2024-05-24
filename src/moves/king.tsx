@@ -1,5 +1,4 @@
 import { Board } from "@/board/index";
-import { KingComponent } from "@/components/pieces/index";
 import { Position, SquareID } from "@/utils/interfaces";
 import { OnBoard, PieceType } from "@/utils/utilites";
 import { Piece } from "./index";
@@ -8,13 +7,14 @@ import { PieceProps } from "./piece";
 export class King extends Piece {
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.KING;
-    this.component = KingComponent;
+    this.move = this.code = PieceType.KING;
     this.value = this.value * 30;
   }
 
-  canCastle(piece: Piece | null, board: Board): boolean {
-    return piece !== null && board.getPreviousMove(piece) === null;
+  canCastle(piece: Piece, board: Board): boolean {
+    return (
+      piece?.color !== SquareID.EMPTY && board.getPreviousMove(piece) === null
+    );
   }
 
   castle(board: Board): Position[] {

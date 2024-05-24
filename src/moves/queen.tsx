@@ -2,9 +2,8 @@ import { Bishop } from "./bishop";
 import { Rook } from "./rook";
 import { Piece, PieceProps } from "./piece";
 import { Board } from "@/board/index";
-import { Position, SquareID } from "@/utils/interfaces";
+import { Position } from "@/utils/interfaces";
 import { PieceType } from "@/utils/utilites";
-import { QueenComponent } from "@/components/pieces/index";
 
 export class Queen extends Piece {
   private rook: Rook;
@@ -12,8 +11,7 @@ export class Queen extends Piece {
 
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.QUEEN;
-    this.component = QueenComponent;
+    this.move = this.code = PieceType.QUEEN;
     this.value = this.value * 90;
     this.rook = new Rook(props);
     this.bishop = new Bishop(props);

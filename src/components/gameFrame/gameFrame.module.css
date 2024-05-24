@@ -1,0 +1,14 @@
+.gameboard {
+  width: 400px;
+  height: 400px;
+  background-color: black;
+  display: flex;
+  flex-wrap: wrap;
+  position: relative;
+  text-align: center;
+}
+
+.gameboard_container {
+  display: flex;
+  justify-content: center;
+}

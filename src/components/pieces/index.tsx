@@ -2,12 +2,14 @@
 import React from "react";
 import styles from "./pieces.module.css";
 import styled from "styled-components";
+import { PieceType } from "../square";
 
 interface StyleProp {
   viewbox: string;
   color: string;
   children: React.ReactNode;
-  height?: "1em";
+  height?: string;
+  width?: string;
   xmlns?: "http://www.w3.org/2000/svg";
 }
 
@@ -15,8 +17,14 @@ interface PieceProp {
   color: string;
 }
 
+interface PieceRenderProp {
+  pieceType: PieceType;
+  color: string;
+}
+
 const SVGComponent: React.FC<StyleProp> = ({
-  height,
+  height = "2em",
+  width = "2em",
   viewbox,
   color,
   xmlns,
@@ -24,7 +32,13 @@ const SVGComponent: React.FC<StyleProp> = ({
 }) => {
   return (
     <div draggable={true} className={styles.piece}>
-      <svg height={height} viewBox={viewbox} fill={color} xmlns={xmlns}>
+      <svg
+        height={height}
+        viewBox={viewbox}
+        fill={color}
+        xmlns={xmlns}
+        width={width}
+      >
         {children}
       </svg>
     </div>
@@ -92,12 +106,25 @@ const EmptyPiece = React.memo(() => {
   return <StyledEmptyBoard />;
 });
 EmptyPiece.displayName = "EmptyPiece";
-export {
-  KingComponent,
-  QueenComponent,
-  RookComponent,
-  BishopComponent,
-  PawnComponent,
-  KnightComponent,
-  EmptyPiece,
-};
+const RenderPiece = React.memo(({ pieceType, color }: PieceRenderProp) => {
+  switch (pieceType) {
+    case PieceType.KING:
+      return <KingComponent color={color} />;
+    case PieceType.QUEEN:
+      return <QueenComponent color={color} />;
+    case PieceType.ROOK:
+      return <RookComponent color={color} />;
+    case PieceType.BISHOP:
+      return <BishopComponent color={color} />;
+    case PieceType.KNIGHT:
+      return <KnightComponent color={color} />;
+    case PieceType.PAWN:
+      return <PawnComponent color={color} />;
+    case PieceType.EMPTY:
+    default:
+      return <EmptyPiece />;
+  }
+});
+RenderPiece.displayName = "RenderPiece";
+
+export { RenderPiece };

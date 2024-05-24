@@ -1,14 +1,12 @@
 import { Board } from "@/board/index";
-import { KnightComponent } from "@/components/pieces/index";
-import { Position, SquareID } from "@/utils/interfaces";
+import { Position } from "@/utils/interfaces";
 import { OnBoard, PieceType } from "@/utils/utilites";
 import { Piece, PieceProps } from "./piece";
 
 export class Knight extends Piece {
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.KNIGHT;
-    this.component = KnightComponent;
+    this.move = this.code = PieceType.KNIGHT;
     this.value = this.value * 30;
   }
 

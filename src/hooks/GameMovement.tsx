@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Position, SquareID } from "@/utils/interfaces";
+import { Position } from "@/utils/interfaces";
 import styles from "../global.module.css";
 import { Board } from "@/board/index";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Minimax } from "@/ai/index";
+import { Piece } from "@/moves/piece";
 
 interface PieceManagement {
   selectPosition: Position | null;
@@ -11,6 +11,7 @@ interface PieceManagement {
 
 const useBoardManagement = (
   board: Board,
+  updateBoard: any,
   gridDomRefs: React.RefObject<HTMLDivElement>[][]
 ): [
   (position: Position) => void,
@@ -22,75 +23,92 @@ const useBoardManagement = (
     selectPosition: null,
   });
 
-  // Helper function to add class name to a square
-  const addClassToSquare = (position: Position, className: string) => {
-    const { row, col } = position;
-    gridDomRefs[row][col].current?.classList.add(className);
-  };
+  useEffect(() => {
+    if (board.player === board.computerPlayerID) {
+      // Perform computer move using minimax algorithm
+      const updatedBoard = board.clone(); // Clone the board
+      const minimax = new Minimax(3, updatedBoard);
+      const { piece: computerPiece, move: computerMove } = minimax.start();
 
-  // Helper function to remove class name from a square
-  const removeClassFromSquare = (position: Position, className: string) => {
-    const { row, col } = position;
-    gridDomRefs[row][col].current?.classList.remove(className);
-  };
-
-  const hover = (hoverPosition: Position) => {
-    const piece = board.grid[hoverPosition.row][hoverPosition.col];
-    if (piece.color === board.player) {
-      const [moves, captures] =
-        board.grid[hoverPosition.row][hoverPosition.col].getMoves(board);
-      const totalMoves = [...moves, ...captures];
-      totalMoves.forEach((position) => {
-        addClassToSquare(position, styles.highlighted_blue);
-      });
+      if (computerPiece && computerMove) {
+        const prevPositionComputer = { ...computerPiece?.getPosition() };
+        updatedBoard.move(prevPositionComputer, computerMove); // Update the cloned board again
+        updateBoard(updatedBoard, prevPositionComputer, computerMove); // Update the state with the new board
+      } else {
+        alert("Game has ended");
+      }
     }
-  };
+  }, [board, updateBoard]);
 
-  const unHover = (unhoverPosition: Position) => {
-    const piece = board.grid[unhoverPosition.row][unhoverPosition.col];
-    if (piece.color === board.player) {
-      const [moves, captures] = piece.getMoves(board);
-      const totalMoves = [...moves, ...captures];
-      totalMoves.forEach((position) => {
-        removeClassFromSquare(position, styles.highlighted_blue);
-      });
-    }
-  };
+  const highlightOrUnHighlightPieceMoves = useCallback(
+    (piecePosition: Position, highLight: boolean) => {
+      const piece = board.grid[piecePosition.row][piecePosition.col];
+      if (piece.color === board.player) {
+        const [moves, captures] =
+          board.grid[piecePosition.row][piecePosition.col].getMoves(board);
+        const totalMoves = [...moves, ...captures];
+        totalMoves.forEach((position) => {
+          highLight
+            ? gridDomRefs[position.row][position.col].current?.classList.add(
+                styles.highlighted_blue
+              )
+            : gridDomRefs[position.row][position.col].current?.classList.remove(
+                styles.highlighted_blue
+              );
+        });
+      }
+    },
+    [board, gridDomRefs]
+  );
 
-  const select = (selectPosition: Position) => {
+  const hover = useCallback(
+    (hoverPosition: Position) => {
+      highlightOrUnHighlightPieceMoves(hoverPosition, true);
+    },
+    [highlightOrUnHighlightPieceMoves]
+  );
+
+  const unHover = useCallback(
+    (unhoverPosition: Position) => {
+      highlightOrUnHighlightPieceMoves(unhoverPosition, false);
+    },
+    [highlightOrUnHighlightPieceMoves]
+  );
+
+  const select = useCallback((selectPosition: Position) => {
     currentPieceManagement.current = {
       selectPosition,
     };
+  }, []);
+
+  const comparePosition = (position1: Position, position2: Position) => {
+    return position1.col === position2.col && position2.row === position1.row;
   };
 
-  const drop = (dropPosition: Position) => {
-    if (dropPosition && currentPieceManagement.current?.selectPosition) {
-      const [prevPosition, currPosition] = [
-        currentPieceManagement.current.selectPosition,
-        dropPosition,
-      ];
-      const piece = board.grid[prevPosition.row][prevPosition.col];
-      if (board.verifyMove(piece, currPosition, false)) {
-        unHover(currentPieceManagement.current?.selectPosition);
-        board.move(prevPosition, currPosition);
-        const prevGridDomRef = gridDomRefs[prevPosition.row][prevPosition.col];
-        const newGridDomRef = gridDomRefs[currPosition.row][currPosition.col];
-        gridDomRefs[currPosition.row][currPosition.col] = prevGridDomRef;
-        gridDomRefs[prevPosition.row][prevPosition.col] = newGridDomRef;
-        const minimax = new Minimax(3, board);
-        const { piece, move } = minimax.start();
-        if (piece && move) {
-          const prevPositionComputer = { ...piece?.getPosition() };
-          const currPositionComputer = { ...move };
-          board.move(prevPositionComputer, currPositionComputer);
-        } else {
-          alert("Game as ended");
-        }
+  const drop = useCallback(
+    (dropPosition: Position) => {
+      if (!dropPosition || !currentPieceManagement.current.selectPosition) {
+        return false;
+      }
+
+      const { selectPosition } = currentPieceManagement.current;
+      const piece = board.grid[selectPosition.row][selectPosition.col];
+      highlightOrUnHighlightPieceMoves(selectPosition, false);
+      if (
+        board.verifyMove(piece, dropPosition, false) &&
+        !comparePosition(selectPosition, dropPosition)
+      ) {
+        const updatedBoard = board.clone(); // Clone the board
+        const [prevPosition, currPosition] = [selectPosition, dropPosition];
+        updatedBoard.move(prevPosition, currPosition); // Update the cloned board
+        updateBoard(updatedBoard, prevPosition, currPosition); // Update the state with the new board
         return true;
       }
-    }
-    return false;
-  };
+
+      return false;
+    },
+    [board, updateBoard, highlightOrUnHighlightPieceMoves]
+  );
 
   return [hover, unHover, select, drop];
 };

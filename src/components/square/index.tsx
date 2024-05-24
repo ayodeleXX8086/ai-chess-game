@@ -1,14 +1,14 @@
 import { Position, SquareID } from "@/utils/interfaces";
 import { PieceType } from "@/utils/utilites";
 import React, { useRef } from "react";
+import { RenderPiece } from "../pieces";
 import styles from "./chess_piece.module.css";
 
 interface SquareProps {
-  type: PieceType;
   squareKey: string;
+  color: string;
   squareRef: React.Ref<any>;
-  playerId: SquareID;
-  component: JSX.Element;
+  pieceType: PieceType;
   position: Position;
   pieceId: number;
   onSelectSquare?: (position: Position) => void;
@@ -18,11 +18,10 @@ interface SquareProps {
 }
 
 const SquareComponent: React.FC<SquareProps> = ({
-  type,
   squareKey,
   squareRef,
-  playerId,
-  component,
+  color,
+  pieceType,
   position,
   pieceId,
   onSelectSquare,
@@ -73,7 +72,7 @@ const SquareComponent: React.FC<SquareProps> = ({
       draggable
       onDrop={onDrop}
     >
-      {component}
+      <RenderPiece color={color} pieceType={pieceType} />
     </section>
   );
 };

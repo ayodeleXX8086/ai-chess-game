@@ -1,12 +1,10 @@
-import { RookComponent } from "@/components/pieces/index";
 import { PieceType } from "@/utils/utilites";
 import { Piece, PieceProps } from "./piece";
 
 export class Rook extends Piece {
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.ROOK;
-    this.component = RookComponent;
+    this.move = this.code = PieceType.ROOK;
     this.value = this.value * 50;
   }
 

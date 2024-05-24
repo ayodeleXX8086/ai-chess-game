@@ -1,9 +1,6 @@
 import { Board } from "@/board/index";
-import { EmptyPiece } from "@/components/pieces/index";
 import { OnBoard, PieceType } from "@/utils/utilites";
-import { ColorID, Position, SquareID } from "../utils/interfaces";
-import { v4 as uuid } from "uuid";
-import { Empty } from "./empty";
+import { Position, SquareID } from "../utils/interfaces";
 
 export type GridItem = Piece;
 export type Grid = GridItem[][];
@@ -16,9 +13,8 @@ export interface PieceProps {
 }
 
 export interface BoardProps {
-  whitePromotions: Piece[];
-  blackPromotions: Piece[];
   grid: GridItem[][];
+  history: Piece[];
   whiteKing: Piece | null;
   blackKing: Piece | null;
   currPlayer: SquareID.BLACK | SquareID.WHITE;
@@ -33,7 +29,8 @@ export abstract class Piece {
   props: PieceProps;
   protected position: Position;
   color: SquareID;
-  code: PieceType; // You can specify a more specific type if needed
+  code: PieceType;
+  move: PieceType;
   value: number;
   protected component: React.FC<any>;
   pieceId: string;
@@ -45,7 +42,7 @@ export abstract class Piece {
     this.position = props.position;
     this.color = props.color;
     this.code = PieceType.EMPTY;
-    this.component = EmptyPiece;
+    this.move = PieceType.EMPTY;
     this.value = this.color !== props.computerColor ? 1 : -1;
     this.pieceId = props.pieceId;
     this.computerColor = props.computerColor;
@@ -59,15 +56,6 @@ export abstract class Piece {
 
   getPosition(): Position {
     return this.position;
-  }
-
-  getComponent() {
-    const Component = this.component; // Get the component
-    return (
-      <Component
-        color={this.color === SquareID.BLACK ? ColorID.BLACK : ColorID.WHITE}
-      />
-    );
   }
 
   abstract getMoves(board: Board): [Position[], Position[]];

@@ -80,5 +80,8 @@ const flip = (piece_map: number[][]) => {
 export const PieceMap = (piece: Piece, computerID: SquareID): number[][] => {
   //console.log("Piece code", piece.code);
   const piece_map = MapPoints[piece.code];
+  if (!piece_map) {
+    console.log("Causing a crash ", piece.code, piece.color, piece.pieceId);
+  }
   return piece.color !== computerID ? piece_map : flip(piece_map);
 };

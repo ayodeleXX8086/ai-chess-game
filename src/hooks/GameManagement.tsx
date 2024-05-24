@@ -18,17 +18,15 @@ import { Empty } from "@/moves/empty";
 
 const BOARD_SIZE = 8;
 
-const initializeBoard = (
+export const initializeBoard = (
   computerPlayerID: SquareID
-): [Grid, Piece[], Piece[], Piece | null, Piece | null] => {
+): [Grid, Piece | null, Piece | null] => {
   const grid: Grid = Array.from({ length: BOARD_SIZE }, () =>
     Array(BOARD_SIZE).fill(null)
   );
 
-  const whitePromotions: Piece[] = [];
-  const blackPromotions: Piece[] = [];
-
-  let index = 0;
+  let whiteKing = null;
+  let blackKing = null;
   GRID.forEach((row, i) => {
     row.forEach((pieceInfo, j) => {
       const [pieceType, playerType] = pieceInfo.split(",");
@@ -42,44 +40,29 @@ const initializeBoard = (
         computerColor: computerPlayerID,
       };
 
-      const currPiece = initializeGridPiece(
-        pieceType as PieceType,
-        pieceProps,
-        squareId,
-        blackPromotions,
-        whitePromotions
-      );
+      const currPiece = initializeGridPiece(pieceType as PieceType, pieceProps);
+
+      if (
+        currPiece.code === PieceType.KING &&
+        currPiece.color === SquareID.BLACK
+      ) {
+        blackKing = currPiece;
+      } else if (
+        currPiece.code === PieceType.KING &&
+        currPiece.color === SquareID.WHITE
+      ) {
+        whiteKing = currPiece;
+      }
 
       grid[i][j] = currPiece;
-      index++;
     });
   });
 
-  const whiteKing =
-    whitePromotions.find((piece) => piece instanceof King) || null;
-  const blackKing =
-    blackPromotions.find((piece) => piece instanceof King) || null;
-
-  return [grid, whitePromotions, blackPromotions, whiteKing, blackKing];
+  return [grid, whiteKing, blackKing];
 };
 
-const initializeGridPiece = (
-  pieceType: PieceType,
-  pieceProps: PieceProps,
-  squareId: SquareID,
-  blackPiecePromotions: Piece[],
-  whitePiecePromotions: Piece[]
-) => {
+const initializeGridPiece = (pieceType: PieceType, pieceProps: PieceProps) => {
   const currPiece: Piece = createPiece(pieceProps, pieceType);
-
-  if (pieceType !== PieceType.EMPTY && pieceType !== PieceType.PAWN) {
-    if (squareId === SquareID.BLACK) {
-      blackPiecePromotions.push(currPiece);
-    } else {
-      whitePiecePromotions.push(currPiece);
-    }
-  }
-
   return currPiece;
 };
 
@@ -99,15 +82,16 @@ export const useGridInitializationDomRef = () => {
 };
 
 export const useGameBoardManagement = (
-  currPlayer: SquareID.BLACK | SquareID.WHITE
-) => {
+  currPlayer: SquareID.BLACK | SquareID.WHITE,
+  gridDomRefs: React.RefObject<HTMLDivElement>[][]
+): [
+  Board,
+  (updatedBoard: Board, prevPosition: Position, currPosition: Position) => void
+] => {
   const computerPlayerID =
     currPlayer === SquareID.BLACK ? SquareID.WHITE : SquareID.BLACK;
-  const [grid, whitePromotions, blackPromotions, whiteKing, blackKing] =
-    initializeBoard(computerPlayerID);
+  const [grid, whiteKing, blackKing] = initializeBoard(computerPlayerID);
   const props = {
-    whitePromotions,
-    blackPromotions,
     grid,
     whiteKing,
     blackKing,
@@ -118,8 +102,22 @@ export const useGameBoardManagement = (
     checkWhiteKing: false,
     checkBlackKing: false,
     pieceToPromote: null,
+    history: [],
   } as BoardProps;
-  const board = new Board(props);
+  const [board, setBoard] = useState<Board>(new Board(props));
 
-  return board;
+  const updateBoard = (
+    updatedBoard: Board,
+    prevPosition: Position,
+    currPosition: Position
+  ) => {
+    // Update the DOM reference for the moved piece
+    const prevRef = gridDomRefs[prevPosition.row][prevPosition.col];
+    const currRef = gridDomRefs[currPosition.row][currPosition.col];
+    gridDomRefs[prevPosition.row][prevPosition.col] = currRef;
+    gridDomRefs[currPosition.row][currPosition.col] = prevRef;
+    setBoard(updatedBoard);
+  };
+
+  return [board, updateBoard];
 };

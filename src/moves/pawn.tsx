@@ -1,5 +1,4 @@
 import { Board } from "@/board/index";
-import { PawnComponent } from "@/components/pieces/index";
 import { Position, SquareID } from "@/utils/interfaces";
 import { OnBoard, PieceType } from "@/utils/utilites";
 import { Piece, PieceProps } from "./piece";
@@ -7,8 +6,7 @@ import { Piece, PieceProps } from "./piece";
 export class Pawn extends Piece {
   constructor(props: PieceProps) {
     super(props);
-    this.code = PieceType.PAWN;
-    this.component = PawnComponent;
+    this.move = this.code = PieceType.PAWN;
     this.value = this.value * 10;
   }
 
@@ -26,7 +24,7 @@ export class Pawn extends Piece {
           if (
             overrideMove &&
             originalMove &&
-            originalMove.code === this.code &&
+            originalMove.move === this.move &&
             overrideMove.getPosition().col === this.position.col + i &&
             Math.abs(
               overrideMove.getPosition().row - overrideMove.getPosition().row
